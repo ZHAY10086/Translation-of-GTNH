@@ -59,22 +59,25 @@ jobs:
       - name: Create/update your branch with upstream content
         if: env.NEW_TAG != ''
         run: |
-          # 1. 切换到你的目标分支（如果没有则创建）
+          # 切换到目标分支（没有则创建）
           git checkout -B ${{ env.TARGET_BRANCH }}
           
-          # 2. 清空当前分支内容（或选择性合并）
-          #    这里以完全覆盖为例，将 upstream_repo 的内容复制过来
-          rm -rf * .[!.]*   # 小心删除隐藏文件，注意保留 .git
+          # 删除当前目录所有文件和隐藏文件，但保留 .git
+          find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' -exec rm -rf {} \;
+          
+          # 复制 upstream_repo 所有内容到当前目录
           cp -r upstream_repo/* . 2>/dev/null || true
           cp -r upstream_repo/.[!.]* . 2>/dev/null || true
           
-          # 3. 提交变更
+          # 配置 git 用户
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # 添加所有变更并提交
           git add -A
           git commit -m "Sync upstream tag ${{ env.NEW_TAG }}" || echo "No changes to commit"
           
-          # 4. 强制推送到远程（覆盖分支）
+          # 强制推送
           git push origin ${{ env.TARGET_BRANCH }} --force
 
       - name: Update last synced tag
